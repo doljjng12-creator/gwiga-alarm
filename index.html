@@ -254,10 +254,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--pink)}
       <span id="startArea"></span>
       <button class="pink" id="btnPaste">📋 붙여넣기 등록</button>
       <button id="btnTemplate">📥 엑셀 양식 받기</button>
-      <button id="btnBackup">💾 백업 저장</button>
-      <button id="btnRestore">📂 백업 불러오기</button>
       <button id="btnSettings">⚙️ 설정</button>
-      <input type="file" id="fileRestore" accept=".json,application/json" hidden>
     </div>
   </header>
 
@@ -355,7 +352,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--pink)}
     <div class="ssec">
       <h4>📢 안내 문구</h4>
       <div class="set-grid">
-        <label for="sHonor">이름 뒤 호칭</label><input type="text" id="sHonor" placeholder="예: 님, 학생, 친구 (비우면 이름만)" maxlength="10">
+        <label for="sHonor">이름 뒤 호칭</label><input type="text" id="sHonor" placeholder="예: 학생, 님, 친구 (비우면 이름만)" maxlength="10">
         <label for="sTpl">기본 문구</label><input type="text" id="sTpl">
         <span></span><span class="hint" style="margin:0">{이름} 자리에 "이름+호칭", {내용} 자리에 내용이 들어가요. </span>
         <span>예시</span><span id="tplPreview" style="font-family:'Jua',sans-serif;color:var(--pink-d)"></span>
@@ -428,7 +425,7 @@ window.ADMIN_EMAIL = "doljjng12@gmail.com";
 'use strict';
 var KEY='gwiga-alarm-v1';
 var DAYS=['일','월','화','수','목','금','토'];
-var DEF={duration:10,repeats:1,template:'{이름}, {내용} 시간입니다',honor:'님',alarmVolume:0.8,voiceVolume:1,rate:1,sound:'chime',theme:'berry',title:'우리반 귀가 알람',voiceURI:''};
+var DEF={duration:10,repeats:1,template:'{이름}, {내용} 시간입니다',honor:'학생',alarmVolume:0.8,voiceVolume:1,rate:1,sound:'chime',theme:'berry',title:'우리반 귀가 알람',voiceURI:''};
 var state={alarms:[],settings:Object.assign({},DEF),fired:{}};
 var selDate=null, started=false, audioCtx=null, keepAlive=null, alarmActive=false, queue=[];
 var $=function(id){return document.getElementById(id)};
@@ -881,19 +878,6 @@ $('btnTemplate').onclick=function(){
   toast('양식을 받았어요. 채운 뒤 날짜~내용 칸을 복사해 붙여넣으세요');
 };
 
-/* 백업 */
-$('btnBackup').onclick=function(){download(new Blob([JSON.stringify({app:'gwiga-alarm',version:2,alarms:state.alarms,settings:state.settings},null,1)],{type:'application/json'}),'귀가알람_백업_'+todayStr()+'.json');toast('백업 파일을 저장했어요');};
-$('btnRestore').onclick=function(){$('fileRestore').value='';$('fileRestore').click()};
-$('fileRestore').onchange=function(){
-  var f=this.files[0];if(!f)return;var r=new FileReader();
-  r.onload=function(){try{var d=JSON.parse(r.result);if(!Array.isArray(d.alarms))throw 0;
-    if(!confirm('백업에서 알람 '+d.alarms.length+'개를 불러올까요?\n지금 있는 알람은 백업 내용으로 바뀌어요.'))return;
-    state.alarms=d.alarms.filter(function(a){return a&&normDate(a.date)&&normTime(a.time)}).map(function(a){return{id:a.id||uid(),date:normDate(a.date),time:normTime(a.time),name:String(a.name||''),content:String(a.content||'')}});
-    if(d.settings)Object.assign(state.settings,migrate(d.settings));
-    save();applyTheme();applyTitle();renderAll();toast('불러왔어요');
-  }catch(e){alert('백업 파일을 읽을 수 없어요.');}};
-  r.readAsText(f);
-};
 
 /* ---------- 설정 (바꾸면 바로 저장) ---------- */
 function koVoices(){try{return speechSynthesis.getVoices().filter(function(v){return /^ko/i.test(v.lang)})}catch(e){return[]}}
