@@ -602,7 +602,7 @@ function cloudPush(){
   synced=cur;syncedT=curT;syncedSettings=sj;
   cloud.write(ops).catch(function(e){console.error(e);toast('⚠️ 웹 저장에 실패했어요. 인터넷 연결을 확인해 주세요.');});
 }
-function cutoffDate(){var d=new Date();d.setDate(d.getDate()-60);return ymd(d);}
+function cutoffDate(){var d=new Date();d.setDate(d.getDate()-((d.getDay()+6)%7));return ymd(d);}
 function showAuth(mode,msg){
   var a=$('auth');$('authMascot').textContent=curTheme().m;$('authTitle').textContent=state.settings.title||DEF.title;
   if(mode==='hide'){a.classList.remove('show');return;}
