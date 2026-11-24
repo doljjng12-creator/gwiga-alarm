@@ -474,6 +474,7 @@ input[type=date]{font-family:inherit;font-size:16px;color:var(--ink);border:2px 
       <h4>🔔 알람</h4>
       <div class="set-grid">
         <label for="sDur">알람 소리 시간</label><div class="rng"><input type="number" id="sDur" min="1" max="120" style="width:90px;flex:none"> 초</div>
+        <label for="sKidSec">미리 울리기</label><div class="rng"><input type="number" id="sKidSec" min="0" max="3600" style="width:90px;flex:none"> 초 전 <span style="font-size:13px;color:var(--sub)">(0이면 정해진 시각에)</span></div>
         <label for="sRep">음성 안내 횟수</label><div class="rng"><input type="number" id="sRep" min="0" max="10" style="width:90px;flex:none"> 번</div>
         <label for="sSound">알람 소리</label>
         <select id="sSound"><option value="chime">딩동 차임</option><option value="music">오르골</option><option value="beep">삐삐</option><option value="xylo">실로폰</option></select>
@@ -548,7 +549,7 @@ window.ADMIN_EMAIL = "doljjng12@gmail.com";
 'use strict';
 var KEY='gwiga-alarm-v1';
 var DAYS=['일','월','화','수','목','금','토'];
-var DEF={duration:10,repeats:1,template:'{이름}, {내용} 시간입니다',honor:'학생',alarmVolume:0.8,voiceVolume:1,rate:1,sound:'chime',theme:'berry',title:'우리반 귀가 알람',voiceURI:'',splitPct:50,ttStartOn:true,ttStartSec:0,ttEndOn:true,ttEndSec:0,ttStartTpl:'{활동} 시간입니다',ttEndTpl:'{활동} 시간이 끝나요'};
+var DEF={duration:10,repeats:1,template:'{이름}, {내용} 시간입니다',honor:'학생',alarmVolume:0.8,voiceVolume:1,rate:1,sound:'chime',theme:'berry',title:'우리반 귀가 알람',voiceURI:'',splitPct:50,kidSec:0,ttStartOn:true,ttStartSec:0,ttEndOn:true,ttEndSec:0,ttStartTpl:'{활동} 시간입니다',ttEndTpl:'{활동} 시간이 끝나요'};
 var state={alarms:[],tt:[],settings:Object.assign({},DEF),fired:{}};
 var selDate=null, started=false, audioCtx=null, keepAlive=null, alarmActive=false, queue=[];
 var $=function(id){return document.getElementById(id)};
@@ -1301,7 +1302,7 @@ function showVol(){$('sAVolV').textContent=Math.round(state.settings.alarmVolume
 $('btnSettings').onclick=function(){$('acctBox').style.display=CLOUD?'flex':'none';$('adminBox').style.display=(CLOUD&&cloud&&cloud.isAdmin)?'block':'none';$('admEmail').value='';
   var s=state.settings;$('sTitle').value=s.title;$('sDur').value=s.duration;$('sRep').value=s.repeats;$('sTpl').value=s.template;$('sHonor').value=s.honor;
   $('sAVol').value=s.alarmVolume;$('sVVol').value=s.voiceVolume;$('sRate').value=s.rate;$('sSound').value=s.sound;
-  $('sSplit').value=s.splitPct;$('sSplitR').textContent=100-s.splitPct;$('sTsOn').checked=!!s.ttStartOn;$('sTsSec').value=s.ttStartSec;$('sTeOn').checked=!!s.ttEndOn;$('sTeSec').value=s.ttEndSec;$('sTsTpl').value=s.ttStartTpl;$('sTeTpl').value=s.ttEndTpl;
+  $('sKidSec').value=+s.kidSec||0;$('sSplit').value=s.splitPct;$('sSplitR').textContent=100-s.splitPct;$('sTsOn').checked=!!s.ttStartOn;$('sTsSec').value=s.ttStartSec;$('sTeOn').checked=!!s.ttEndOn;$('sTeSec').value=s.ttEndSec;$('sTsTpl').value=s.ttStartTpl;$('sTeTpl').value=s.ttEndTpl;
   fillVoices();renderThemes();renderTplPreview();showVol();openM('mSettings');
 };
 function bindSet(id,key,fn,ev){$(id).addEventListener(ev||'input',function(){var v=fn(this.value);if(v===null)return;state.settings[key]=v;save();if(key==='title')applyTitle();if(key==='template'||key==='honor')renderTplPreview();});}
@@ -1310,6 +1311,7 @@ bindSet('sSplit','splitPct',function(v){var n=parseInt(v,10);return isNaN(n)?nul
 $('sSplit').addEventListener('change',function(){this.value=state.settings.splitPct;$('sSplitR').textContent=100-state.settings.splitPct;applySplit();});
 $('sTsOn').addEventListener('change',function(){state.settings.ttStartOn=this.checked;save();});
 $('sTeOn').addEventListener('change',function(){state.settings.ttEndOn=this.checked;save();});
+bindSet('sKidSec','kidSec',function(v){var n=parseInt(v,10);return isNaN(n)?0:Math.max(0,Math.min(3600,n))},'change');
 bindSet('sTsSec','ttStartSec',function(v){var n=parseInt(v,10);return isNaN(n)?0:Math.max(0,Math.min(3600,n))},'change');
 bindSet('sTeSec','ttEndSec',function(v){var n=parseInt(v,10);return isNaN(n)?0:Math.max(0,Math.min(3600,n))},'change');
 bindSet('sTsTpl','ttStartTpl',function(v){return v.trim()||DEF.ttStartTpl});
@@ -1428,12 +1430,13 @@ var lastDay=todayStr();
 function check(){
   var n=new Date(), today=ymd(n), cur=n.getHours()*60+n.getMinutes();
   if(today!==lastDay){lastDay=today;state.fired={};save();selDate=null;renderAll();}
-  checkKids(today,cur);
+  checkKids(today,n.getHours()*3600+n.getMinutes()*60+n.getSeconds());
   checkTT(n,today);
 }
-function checkKids(today,cur){
+function checkKids(today,sec){
+  var pre=+state.settings.kidSec||0;
   // 정각~2분 사이에 아직 안 울린 알람 (백그라운드에서 타이머가 늦어져도 놓치지 않도록)
-  var due=state.alarms.filter(function(a){if(a.date!==today||state.fired[a.id])return false;var m=toMin(a.time);return cur>=m&&cur-m<=2;});
+  var due=state.alarms.filter(function(a){if(a.date!==today||state.fired[a.id])return false;var at=toMin(a.time)*60-pre;return sec>=at&&sec-at<=150;});
   if(!due.length)return;
   due.forEach(function(a){state.fired[a.id]=1});
   Object.keys(state.fired).forEach(function(id){if(/^t[se]:/.test(id))return;if(!state.alarms.some(function(a){return a.id===id&&a.date===today}))delete state.fired[id]});
