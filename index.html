@@ -233,6 +233,47 @@ input:focus,textarea:focus,select:focus{border-color:var(--pink)}
 .auth p{color:var(--sub);font-size:15px;line-height:1.6;margin:8px 0 16px;white-space:pre-line}
 .auth .gbtn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#3c4043;border:2px solid #dadce0;box-shadow:none;font-size:16px;padding:10px 18px}
 .auth .gbtn svg{width:20px;height:20px}
+.alarm .bell,.alarm .kid{animation:none !important}
+/* 시간표 */
+.split{display:flex;gap:12px;align-items:stretch}
+.split>#list{flex:0 0 var(--lw,50%);max-width:var(--lw,50%);min-width:0}
+.ttpane{flex:1;min-width:0;height:290px;overflow-y:auto;border-left:2px dashed var(--line);padding:0 4px 0 12px}
+.tth{font-family:'Jua',sans-serif;font-size:19px;display:flex;align-items:center;gap:8px;margin:0 0 8px;position:sticky;top:0;background:var(--card);z-index:1;padding-bottom:4px}
+.tth .hint{font-family:'Gowun Dodum',sans-serif;font-size:12px;margin:0}
+.tth button{margin-left:auto}
+.ttr{display:flex;align-items:center;gap:8px;margin-bottom:7px;cursor:pointer;user-select:none}
+.ttr .tn{flex:0 0 38%;max-width:180px;background:var(--pink-d);color:#fff;font-family:'Jua',sans-serif;font-size:20px;border-radius:14px 6px 6px 14px;padding:8px 10px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttr .tt{flex:1;background:var(--rowbg);border:2px solid var(--line);border-radius:999px;padding:7px 12px;font-family:'Jua',sans-serif;font-size:20px;text-align:center;white-space:nowrap}
+.ttr .x{background:transparent;box-shadow:none;color:var(--sub);padding:4px 6px;font-size:14px;opacity:.5}
+.ttr .x:hover{opacity:1;color:#d64545}
+.ttr.past{opacity:.45}
+.ttr.now .tt{background:var(--pink);border-color:var(--pink);color:#fff}
+.ttr.now .tn::before{content:'지금 ▶ ';font-size:14px}
+.ttr.edit{cursor:default}
+.ttr.edit input{padding:5px 6px;font-size:16px;min-width:0}
+.ttr.edit .eN{flex:0 0 34%}
+input[type=date]{font-family:inherit;font-size:16px;color:var(--ink);border:2px solid var(--line);border-radius:12px;padding:7px 10px;background:var(--field);outline:none}
+.cpmode{display:flex;gap:8px;margin-bottom:8px}
+.cpmode label,.cpopt label{display:inline-flex;align-items:center;gap:4px;margin-right:10px;cursor:pointer}
+.cal{border:2px solid var(--line);border-radius:16px;padding:8px}
+.calh{display:flex;align-items:center;justify-content:center;gap:14px;font-family:'Jua',sans-serif;font-size:20px;margin-bottom:6px}
+.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.calg .dw{text-align:center;font-size:13px;color:var(--sub)}
+.calg .cd{border:2px solid transparent;border-radius:10px;padding:4px 2px;text-align:center;cursor:pointer;min-height:48px;background:var(--rowbg);user-select:none}
+.calg .cd .num{font-family:'Jua',sans-serif;font-size:17px}
+.calg .cd .cnt{font-size:11px;color:var(--sub);line-height:1.2}
+.calg .cd.other{opacity:.4}
+.calg .cd.wkend .num{color:#d66}
+.calg .cd.today{border-color:var(--mint)}
+.calg .cd.src{background:var(--pink);color:#fff}
+.calg .cd.src .cnt{color:#fff}
+.calg .cd.dst{background:var(--mint);color:#fff}
+.calg .cd.dst .cnt{color:#fff}
+.cpopt{margin-top:10px;font-size:15px;line-height:2}
+@media (min-width:721px) and (min-height:560px){
+  .split{flex:1;min-height:0}
+  .ttpane{height:auto}
+}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#4a3b52;color:#fff;padding:10px 18px;border-radius:999px;font-size:15px;opacity:0;transition:opacity .25s;z-index:120;pointer-events:none}
 .toast.show{opacity:.95}
 
@@ -252,7 +293,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--pink)}
     <div class="logo"><span class="bunny" id="mascot">🐰</span> <span id="titleText">우리반 귀가 알람</span></div>
     <div class="toolbar">
       <span id="startArea"></span>
-      <button class="pink" id="btnPaste">📋 붙여넣기 등록</button>
+      <button class="pink" id="btnPaste">📋 알람 등록</button>
+      <button class="mint" id="btnTT">📚 시간표 등록</button>
+      <button id="btnCopy">📅 복사</button>
       <button id="btnTemplate">📥 엑셀 양식 받기</button>
       <button id="btnSettings">⚙️ 설정<span id="reqBadge" style="display:none;margin-left:6px;background:#ff5a6e;color:#fff;border-radius:99px;padding:0 7px;font-size:13px"></span></button>
     </div>
@@ -275,7 +318,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--pink)}
 
   <section class="panel">
     <h2 id="panelTitle"></h2>
-    <div id="list"></div>
+    <div class="split"><div id="list"></div><div class="ttpane" id="ttPane"></div></div>
 
     <div class="addbox">
       <div class="grid">
@@ -292,7 +335,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--pink)}
 <!-- 붙여넣기 -->
 <div class="modal-bg" id="mPaste">
   <div class="modal">
-    <h3>📋 엑셀에서 붙여넣기</h3>
+    <h3>📋 알람 등록</h3>
     <p class="hint">엑셀에서 <b>날짜 · 시간 · 이름 · 내용</b> 4칸을 복사해서 아래에 붙여넣으세요 (Ctrl+V).<br>
       예) 2026-11-23 &nbsp; 13:15 &nbsp; 박지영 &nbsp; 피아노 학원 &nbsp;·&nbsp; 날짜가 없거나 틀린 줄이 있으면 등록되지 않아요.</p>
     <textarea id="pasteText" placeholder="여기에 붙여넣기 (Ctrl+V)"></textarea>
@@ -304,6 +347,59 @@ input:focus,textarea:focus,select:focus{border-color:var(--pink)}
       </label>
       <button class="ghost" data-close>취소</button>
       <button class="pink" id="btnPasteOk" disabled>등록하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 시간표 등록 -->
+<div class="modal-bg" id="mTT">
+  <div class="modal">
+    <h3>📚 시간표 등록</h3>
+    <p class="hint">한 줄씩 넣거나, 엑셀에서 <b>날짜 · 시작 · 끝 · 활동</b> 4칸을 복사해 아래에 붙여넣으세요.<br>
+      예) 2026-11-25 &nbsp; 9:00 &nbsp; 10:00 &nbsp; 독서 &nbsp;·&nbsp; 1:00~7:59처럼 앞에 0이 없는 시간은 오후(13:00~19:59)로 알아들어요.</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <input type="date" id="ttDate" aria-label="날짜">
+      <input type="time" id="ttStart" aria-label="시작"> ~ <input type="time" id="ttEnd" aria-label="끝">
+      <input type="text" id="ttName" placeholder="활동 (예: 독서)" style="flex:1;min-width:120px">
+      <button class="mint" id="btnTTAdd">➕ 추가</button>
+    </div>
+    <div id="ttAddMsg" style="font-size:14px;margin-top:6px;min-height:20px"></div>
+    <h4 style="margin:10px 0 6px">엑셀에서 붙여넣기</h4>
+    <textarea id="ttPaste" placeholder="여기에 붙여넣기 (Ctrl+V)" style="width:100%;min-height:110px"></textarea>
+    <div id="ttSummary" style="margin-top:8px;font-size:15px"></div>
+    <div class="prev" id="ttPrev" hidden></div>
+    <div class="foot">
+      <label style="margin-right:auto;font-size:14px;display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="ttReplace"> 같은 날짜의 기존 시간표는 지우고 새로 넣기
+      </label>
+      <button class="ghost" data-close>닫기</button>
+      <button class="pink" id="btnTTOk" disabled>붙여넣은 것 등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- 복사 -->
+<div class="modal-bg" id="mCopy">
+  <div class="modal">
+    <h3>📅 일정 복사</h3>
+    <div class="cpmode">
+      <label><input type="radio" name="cpMode" value="week" checked> 주 단위</label>
+      <label><input type="radio" name="cpMode" value="day"> 하루 단위</label>
+    </div>
+    <p class="hint" id="cpStep" style="font-size:16px"></p>
+    <div class="cal">
+      <div class="calh"><button class="small ghost" id="cpPrev">◀</button><span id="cpMonth"></span><button class="small ghost" id="cpNext">▶</button></div>
+      <div class="calg" id="cpGrid"></div>
+    </div>
+    <div class="cpopt">
+      복사할 것: <label><input type="checkbox" id="cpA" checked> 알람</label><label><input type="checkbox" id="cpT" checked> 시간표</label><br>
+      붙일 곳에 이미 있으면: <label><input type="radio" name="cpHow" value="add" checked> 그대로 두고 추가</label><label><input type="radio" name="cpHow" value="over"> 지우고 덮어쓰기</label>
+    </div>
+    <div id="cpSum" style="margin-top:6px;font-size:15px;min-height:22px"></div>
+    <div class="foot">
+      <button class="ghost" id="cpReset" style="margin-right:auto">다시 고르기</button>
+      <button class="ghost" data-close>닫기</button>
+      <button class="pink" id="cpOk" disabled>복사하기</button>
     </div>
   </div>
 </div>
@@ -373,6 +469,18 @@ input:focus,textarea:focus,select:focus{border-color:var(--pink)}
       </div>
     </div>
 
+    <div class="ssec">
+      <h4>📚 시간표</h4>
+      <div class="set-grid">
+        <label for="sSplit">화면 나누기</label><div class="rng" style="flex-wrap:wrap">알람 목록 <input type="number" id="sSplit" min="20" max="80" step="5" style="width:80px;flex:none"> % · 시간표 <b id="sSplitR"></b>%</div>
+        <label>시작 알람</label><div class="rng" style="flex-wrap:wrap"><label style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" id="sTsOn"> 켜기</label> · 시작 <input type="number" id="sTsSec" min="0" max="3600" style="width:90px;flex:none"> 초 전 <span style="font-size:13px;color:var(--sub)">(0이면 시작 시각에)</span></div>
+        <label>종료 알람</label><div class="rng" style="flex-wrap:wrap"><label style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" id="sTeOn"> 켜기</label> · 끝 <input type="number" id="sTeSec" min="0" max="3600" style="width:90px;flex:none"> 초 전 <span style="font-size:13px;color:var(--sub)">(0이면 끝나는 시각에)</span></div>
+        <label for="sTsTpl">시작 안내 문구</label><input type="text" id="sTsTpl">
+        <label for="sTeTpl">종료 안내 문구</label><input type="text" id="sTeTpl">
+      </div>
+      <p class="hint" style="margin-top:6px">문구의 {활동}은 활동 이름으로 바뀌어요. 예) 독서 시간입니다</p>
+    </div>
+
     <div class="foot">
       <button id="btnCleanup" class="danger" style="margin-right:auto">🧹 지난 날짜 알람 지우기</button>
       <button id="btnTest">🔔 알람 미리 보기</button>
@@ -427,8 +535,8 @@ window.ADMIN_EMAIL = "doljjng12@gmail.com";
 'use strict';
 var KEY='gwiga-alarm-v1';
 var DAYS=['일','월','화','수','목','금','토'];
-var DEF={duration:10,repeats:1,template:'{이름}, {내용} 시간입니다',honor:'학생',alarmVolume:0.8,voiceVolume:1,rate:1,sound:'chime',theme:'berry',title:'우리반 귀가 알람',voiceURI:''};
-var state={alarms:[],settings:Object.assign({},DEF),fired:{}};
+var DEF={duration:10,repeats:1,template:'{이름}, {내용} 시간입니다',honor:'학생',alarmVolume:0.8,voiceVolume:1,rate:1,sound:'chime',theme:'berry',title:'우리반 귀가 알람',voiceURI:'',splitPct:50,ttStartOn:true,ttStartSec:0,ttEndOn:true,ttEndSec:0,ttStartTpl:'{활동} 시간입니다',ttEndTpl:'{활동} 시간이 끝나요'};
+var state={alarms:[],tt:[],settings:Object.assign({},DEF),fired:{}};
 var selDate=null, started=false, audioCtx=null, keepAlive=null, alarmActive=false, queue=[];
 var $=function(id){return document.getElementById(id)};
 
@@ -468,10 +576,12 @@ var CLOUD=!!(CFG.apiKey&&!/여기에/.test(CFG.apiKey)&&CFG.projectId);
 var FB_VER='10.12.2';
 var cloud=null, cloudReady=false, synced={}, syncedSettings='', pendingRender=false;
 function readLocal(){try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){return null}}
+function normT(t){return{id:String(t.id),date:String(t.date),start:String(t.start),end:String(t.end),name:String(t.name||'')}}
+var syncedT={};
 function normA(a){return{id:String(a.id),date:String(a.date),time:String(a.time),name:String(a.name||''),content:String(a.content||'')}}
 function load(){
   var s=readLocal();
-  if(s){state.alarms=(s.alarms||[]).map(normA);var old=s.settings||{};
+  if(s){state.alarms=(s.alarms||[]).map(normA);state.tt=(s.tt||[]).map(normT);var old=s.settings||{};
     Object.assign(state.settings,migrate(old));state.fired=s.fired||{};}
 }
 function save(){
@@ -484,10 +594,12 @@ function cloudPush(){
   var ops=[], cur={};
   state.alarms.forEach(function(a){a=normA(a);var j=JSON.stringify(a);cur[a.id]=j;if(synced[a.id]!==j)ops.push({t:'set',c:'alarms',id:a.id,d:a});});
   Object.keys(synced).forEach(function(id){if(!cur[id])ops.push({t:'del',c:'alarms',id:id});});
+  var curT={};(state.tt||[]).forEach(function(t){t=normT(t);var j=JSON.stringify(t);curT[t.id]=j;if(syncedT[t.id]!==j)ops.push({t:'set',c:'tt',id:t.id,d:t});});
+  Object.keys(syncedT).forEach(function(id){if(!curT[id])ops.push({t:'del',c:'tt',id:id});});
   var st=Object.assign({},state.settings), sj=JSON.stringify(st);
   if(sj!==syncedSettings)ops.push({t:'set',c:'meta',id:'settings',d:st});
   if(!ops.length)return;
-  synced=cur;syncedSettings=sj;
+  synced=cur;syncedT=curT;syncedSettings=sj;
   cloud.write(ops).catch(function(e){console.error(e);toast('⚠️ 웹 저장에 실패했어요. 인터넷 연결을 확인해 주세요.');});
 }
 function cutoffDate(){var d=new Date();d.setDate(d.getDate()-60);return ymd(d);}
@@ -617,10 +729,10 @@ function startCloud(){
     };
     $('btnAuthOut').onclick=$('btnLogout').onclick=function(){cloud.signOut();closeM('mSettings');};
     A.onAuthStateChanged(auth,function(user){
-      unsubs.forEach(function(f){f()});unsubs=[];cloudReady=false;synced={};syncedSettings='';
+      unsubs.forEach(function(f){f()});unsubs=[];cloudReady=false;synced={};syncedT={};syncedSettings='';state.tt=[];
       if(!user){cloud.isAdmin=false;$('adminBox').style.display='none';showAuth('login','선생님 구글 계정으로 로그인해 주세요.\n관리자가 허락한 계정만 사용할 수 있어요.');return;}
       cloud.email=(user.email||'').toLowerCase();uid=user.uid;$('acctEmail').textContent=cloud.email;
-      var gotA,gotS,settingsMissing,first;
+      var gotA,gotS,gotT,settingsMissing,first;
       startData();
       function startData(){
       acc={emails:[],admins:[]};refreshAdmin();
@@ -631,7 +743,7 @@ function startCloud(){
         refreshAdmin();
       },function(e){console.warn(e);}));
       showAuth('loading',cloud.email+'\n알람을 불러오는 중…');
-      gotA=false;gotS=false;settingsMissing=false;first=true;
+      gotA=false;gotS=false;gotT=false;settingsMissing=false;first=true;
       var gateOn=false, startUser=user;
       function gate(){
         if(gateOn)return;gateOn=true;
@@ -655,7 +767,7 @@ function startCloud(){
         else showAuth('error','알람을 불러오지 못했어요. ('+(e&&e.code||e)+')\n인터넷 연결을 확인해 주세요.');
       }
       function ready(){
-        if(!first||!gotA||!gotS)return;first=false;
+        if(!first||!gotA||!gotS||!gotT)return;first=false;
         var legacy=readLocal();
         if(settingsMissing&&!state.alarms.length&&legacy&&legacy.alarms&&legacy.alarms.length&&
            confirm('이 PC에 저장된 알람 '+legacy.alarms.length+'개와 설정을 웹으로 옮길까요?')){
@@ -677,6 +789,13 @@ function startCloud(){
         var list=[];qs.forEach(function(d){list.push(normA(Object.assign({},d.data(),{id:d.id})))});
         state.alarms=list;synced={};list.forEach(function(a){synced[a.id]=JSON.stringify(a)});
         gotA=true;
+        if(!first){if(editing)pendingRender=true;else renderAll();}
+        ready();
+      },onErr));
+      unsubs.push(F.onSnapshot(F.query(F.collection(db,'users',uid,'tt'),F.where('date','>=',cutoffDate())),function(qs){
+        var list=[];qs.forEach(function(d){list.push(normT(Object.assign({},d.data(),{id:d.id})))});
+        state.tt=list;syncedT={};list.forEach(function(t){syncedT[t.id]=JSON.stringify(t)});
+        gotT=true;
         if(!first){if(editing)pendingRender=true;else renderAll();}
         ready();
       },onErr));
@@ -798,7 +917,7 @@ function renderList(){
   var d=parseYmd(selDate), list=alarmsOn(selDate), now=new Date(), hm=pad(now.getHours())+':'+pad(now.getMinutes()), isToday=selDate===todayStr();
   $('panelTitle').innerHTML='🗓️ '+(d.getMonth()+1)+'월 '+d.getDate()+'일 '+DAYS[d.getDay()]+'요일 <span style="font-size:16px;color:var(--sub)">'+list.length+'명</span>'
     +(list.length?'<span class="hint">· 줄을 더블클릭하면 바로 고칠 수 있어요</span><button class="danger small" id="btnClearDay" style="margin-left:auto">이 날 전체 삭제</button>':'');
-  if(!list.length){$('list').innerHTML='<div class="empty"><span class="big">🧸</span>이 날은 등록된 알람이 없어요<br>아래에서 추가하거나 붙여넣기로 등록해 주세요</div>';}
+  if(!list.length){$('list').innerHTML='<div class="empty"><span class="big">🧸</span>이 날은 등록된 알람이 없어요<br>아래에서 추가하거나 📋 알람 등록으로 등록해 주세요</div>';}
   else{
     var prev='';
     $('list').innerHTML='<div class="lrows">'+list.map(function(a){
@@ -814,7 +933,179 @@ function renderList(){
     if(confirm(mmdd(selDate)+' 알람을 모두 지울까요?')){state.alarms=state.alarms.filter(function(a){return a.date!==selDate});save();renderAll();toast('삭제했어요');}
   };
 }
-function renderAll(){renderTabs();renderList();renderClock();renderUpcoming();}
+function renderAll(){renderTabs();renderList();renderTT();applySplit();renderClock();renderUpcoming();}
+function applySplit(){var p=+state.settings.splitPct||50;p=Math.max(20,Math.min(80,p));var sp=document.querySelector('.split');if(sp)sp.style.setProperty('--lw',p+'%');}
+function sortTT(a,b){return a.start.localeCompare(b.start)||a.end.localeCompare(b.end)}
+function ttOn(date){return (state.tt||[]).filter(function(t){return t.date===date}).sort(sortTT)}
+function ttById(id){return (state.tt||[]).filter(function(t){return t.id===id})[0]}
+function renderTT(){
+  var list=ttOn(selDate), now=new Date(), hm=pad(now.getHours())+':'+pad(now.getMinutes()), isToday=selDate===todayStr();
+  var h='<div class="tth">📚 시간표 <span style="font-size:15px;color:var(--sub)">'+mmdd(selDate)+'</span>'+(list.length?'<span class="hint">더블클릭해서 고치기</span>':'')+'<button class="small" id="btnTTHere">➕ 등록</button></div>';
+  if(!list.length)h+='<div class="empty"><span class="big">📚</span>이 날은 시간표가 없어요<br>📚 시간표 등록으로 넣어 주세요</div>';
+  else h+=list.map(function(t){
+    var now_=isToday&&t.start<=hm&&hm<t.end, past=isToday&&t.end<=hm;
+    return '<div class="ttr'+(now_?' now':'')+(past?' past':'')+'" data-id="'+t.id+'"><div class="tn">'+esc(t.name)+'</div><div class="tt">'+t.start+' ~ '+t.end+'</div><button class="x" data-del title="삭제">✕</button></div>';
+  }).join('');
+  $('ttPane').innerHTML=h;
+  $('btnTTHere').onclick=function(){openTT(selDate)};
+}
+$('ttPane').addEventListener('click',function(e){
+  var x=e.target.closest('[data-del]');if(!x)return;
+  var t=ttById(x.closest('.ttr').dataset.id);if(!t)return;
+  if(confirm(t.name+' ('+t.start+' ~ '+t.end+') 시간표를 지울까요?')){state.tt=state.tt.filter(function(y){return y.id!==t.id});save();renderAll();}
+});
+$('ttPane').addEventListener('dblclick',function(e){
+  if(editing)return;
+  var row=e.target.closest('.ttr');if(!row||e.target.closest('[data-del]'))return;
+  var t=ttById(row.dataset.id);if(!t)return;editing=true;
+  var focusOn=e.target.closest('.tt')?'.eS':'.eN';
+  row.className='ttr edit';
+  row.innerHTML='<input type="text" class="eN" value="'+esc(t.name)+'"><input type="time" class="eS" value="'+t.start+'"><span>~</span><input type="time" class="eE" value="'+t.end+'"><span style="font-size:12px;color:var(--sub)">Enter 저장</span>';
+  var f=row.querySelector(focusOn);f.focus();if(f.select)f.select();
+  var done=false;
+  function commit(ok){
+    if(done)return;done=true;
+    if(ok){var s=row.querySelector('.eS').value,en=row.querySelector('.eE').value,n=row.querySelector('.eN').value.trim();
+      if(s&&en&&n&&s<en){t.start=s;t.end=en;t.name=n;}else toast('시간이나 활동 이름을 확인해 주세요');}
+    finishEdit();
+  }
+  row.addEventListener('keydown',function(ev){if(ev.key==='Enter')commit(true);else if(ev.key==='Escape'){ev.stopPropagation();commit(false);}});
+  row.addEventListener('focusout',function(){setTimeout(function(){if(!row.contains(document.activeElement))commit(true)},0)});
+});
+
+/* ---------- 시간표 등록 ---------- */
+function ttTime(v){
+  v=String(v||'').trim();var t=normTime(v);if(!t)return null;
+  var h=+t.slice(0,2);
+  if(h>=1&&h<=7&&!/^0/.test(v)&&!/오전|am/i.test(v))t=pad(h+12)+t.slice(2);
+  return t;
+}
+function parseTT(text){
+  var rows=[];
+  text.replace(/\r/g,'').split('\n').forEach(function(raw,i){
+    if(!raw.trim())return;
+    var c=raw.split('\t');
+    if(c.length<3&&/\s{2,}/.test(raw))c=raw.trim().split(/\s{2,}/);
+    c=c.map(function(x){return x.trim()}).filter(function(x,j){return x!==''||j===0});
+    if(c.length>=2&&/~/.test(c[1])){var p=c[1].split('~');c.splice(1,1,p[0].trim(),p.slice(1).join('~').trim());}
+    if(/날짜/.test(c[0]||'')&&/시작|시간/.test(c[1]||''))return;
+    var r={line:i+1,date:c[0]||'',start:c[1]||'',end:c[2]||'',name:c.slice(3).join(' ').trim(),err:''};
+    var d=normDate(r.date), s=ttTime(r.start), e=ttTime(r.end);
+    if(!r.date)r.err='날짜가 없어요';
+    else if(!d)r.err='날짜 형식이 이상해요 (예: 2026-11-25)';
+    else if(!s)r.err='시작 시간이 이상해요 (예: 9:00)';
+    else if(!e)r.err='끝 시간이 이상해요 (예: 10:00)';
+    else if(s>=e)r.err='끝 시간이 시작보다 빨라요';
+    else if(!r.name)r.err='활동 이름이 없어요';
+    if(d)r.date=d;if(s)r.start=s;if(e)r.end=e;
+    rows.push(r);
+  });
+  return rows;
+}
+function addTT(r){
+  if(state.tt.some(function(t){return t.date===r.date&&t.start===r.start&&t.end===r.end&&t.name===r.name}))return false;
+  state.tt.push({id:uid(),date:r.date,start:r.start,end:r.end,name:r.name});return true;
+}
+var ttParsed=[];
+function openTT(date){
+  $('ttDate').value=date||selDate;$('ttStart').value='';$('ttEnd').value='';$('ttName').value='';$('ttAddMsg').textContent='';
+  $('ttPaste').value='';$('ttSummary').textContent='';$('ttPrev').hidden=true;$('btnTTOk').disabled=true;ttParsed=[];
+  openM('mTT');setTimeout(function(){$('ttStart').focus()},50);
+}
+$('btnTT').onclick=function(){openTT(selDate)};
+$('btnTTAdd').onclick=function(){
+  var r={date:$('ttDate').value,start:$('ttStart').value,end:$('ttEnd').value,name:$('ttName').value.trim()};
+  var msg=!r.date?'날짜를 골라 주세요':!r.start||!r.end?'시작·끝 시간을 넣어 주세요':r.start>=r.end?'끝 시간이 시작보다 빨라요':!r.name?'활동 이름을 넣어 주세요':'';
+  if(msg){$('ttAddMsg').innerHTML='<span class="msg-err">⚠️ '+msg+'</span>';return;}
+  var ok=addTT(r);save();renderAll();
+  $('ttAddMsg').innerHTML=ok?'<span class="msg-ok">✅ '+mmdd(r.date)+' '+esc(r.name)+' '+r.start+'~'+r.end+' 추가했어요</span>':'<span class="msg-err">이미 같은 시간표가 있어요</span>';
+  $('ttStart').value=r.end;$('ttEnd').value='';$('ttName').value='';$('ttName').focus();
+};
+$('ttName').addEventListener('keydown',function(e){if(e.key==='Enter')$('btnTTAdd').click();});
+$('ttPaste').addEventListener('input',function(){
+  ttParsed=parseTT(this.value);
+  var errs=ttParsed.filter(function(r){return r.err}), ok=ttParsed.length-errs.length;
+  if(!ttParsed.length){$('ttSummary').textContent='';$('ttPrev').hidden=true;$('btnTTOk').disabled=true;return;}
+  $('ttSummary').innerHTML=errs.length?'<span class="msg-err">⚠️ '+errs.length+'줄에 문제가 있어요. 고친 뒤 다시 붙여넣어 주세요.</span>':'<span class="msg-ok">✅ '+ok+'개 모두 등록할 수 있어요!</span>';
+  $('ttPrev').hidden=false;
+  $('ttPrev').innerHTML='<table><tr><th>줄</th><th>날짜</th><th>시작</th><th>끝</th><th>활동</th><th>확인</th></tr>'+ttParsed.map(function(r){
+    return '<tr class="'+(r.err?'err':'')+'"><td>'+r.line+'</td><td>'+esc(r.date)+'</td><td>'+esc(r.start)+'</td><td>'+esc(r.end)+'</td><td>'+esc(r.name)+'</td><td>'+(r.err?esc(r.err):'👍')+'</td></tr>';
+  }).join('')+'</table>';
+  $('btnTTOk').disabled=errs.length>0;
+});
+$('btnTTOk').onclick=function(){
+  if(!ttParsed.length||ttParsed.some(function(r){return r.err}))return;
+  if($('ttReplace').checked){var ds={};ttParsed.forEach(function(r){ds[r.date]=1});state.tt=state.tt.filter(function(t){return !ds[t.date]});}
+  var n=0;ttParsed.forEach(function(r){if(addTT(r))n++;});
+  save();closeM('mTT');renderAll();toast('시간표 '+n+'개 등록했어요'+(ttParsed.length-n?' (똑같은 '+(ttParsed.length-n)+'개는 건너뜀)':''));
+};
+
+/* ---------- 복사 (주 단위 / 하루 단위) ---------- */
+function addDaysS(s,n){var d=parseYmd(s);d.setDate(d.getDate()+n);return ymd(d)}
+function mondayOf(s){var d=parseYmd(s);return addDaysS(s,-((d.getDay()+6)%7))}
+function daysBetween(a,b){return Math.round((parseYmd(b)-parseYmd(a))/86400000)}
+var cp={mode:'week',month:null,src:null,dst:[]};
+function cpKey(d){return cp.mode==='week'?mondayOf(d):d}
+function cpRange(k){return cp.mode==='week'?[k,addDaysS(k,6)]:[k,k]}
+function cpLabel(k){var r=cpRange(k);return cp.mode==='week'?mmdd(r[0])+'~'+mmdd(addDaysS(k,4))+' 주':mmdd(k)+'('+DAYS[parseYmd(k).getDay()]+')'}
+function renderCopy(){
+  var m=cp.month, y=m.getFullYear(), mo=m.getMonth();
+  $('cpMonth').textContent=y+'년 '+(mo+1)+'월';
+  var first=new Date(y,mo,1), start=addDaysS(ymd(first),-((first.getDay()+6)%7)), today=todayStr(), h='';
+  ['월','화','수','목','금','토','일'].forEach(function(w){h+='<div class="dw">'+w+'</div>'});
+  for(var i=0;i<42;i++){
+    var d=addDaysS(start,i), dd=parseYmd(d), k=cpKey(d);
+    if(i===35&&dd.getMonth()!==mo)break;
+    var na=state.alarms.filter(function(a){return a.date===d}).length, nt=(state.tt||[]).filter(function(t){return t.date===d}).length;
+    var cls='cd'+(dd.getMonth()!==mo?' other':'')+(dd.getDay()%6===0?' wkend':'')+(d===today?' today':'')+(cp.src===k?' src':'')+(cp.dst.indexOf(k)>=0?' dst':'');
+    h+='<div class="'+cls+'" data-d="'+d+'"><div class="num">'+dd.getDate()+'</div><div class="cnt">'+(na?'🔔'+na:'')+(nt?' 📚'+nt:'')+'</div></div>';
+  }
+  $('cpGrid').innerHTML=h;
+  var wk=cp.mode==='week';
+  $('cpStep').innerHTML=!cp.src?'① <b>복사할 '+(wk?'주':'날')+'</b>'+(wk?'를':'을')+' 달력에서 눌러 주세요.'+(wk?' (그 주의 아무 날이나 눌러도 돼요)':'')
+    :'② <b>붙일 '+(wk?'주':'날')+'</b>'+(wk?'를':'을')+' 눌러 주세요. 여러 개 고를 수 있어요. <span style="color:var(--sub)">(분홍 = 복사할 곳, 초록 = 붙일 곳)</span>';
+  var ok=cp.src&&cp.dst.length&&($('cpA').checked||$('cpT').checked);
+  $('cpOk').disabled=!ok;
+  if(cp.src){
+    var r=cpRange(cp.src), na=$('cpA').checked?state.alarms.filter(function(a){return a.date>=r[0]&&a.date<=r[1]}).length:0, nt=$('cpT').checked?(state.tt||[]).filter(function(t){return t.date>=r[0]&&t.date<=r[1]}).length:0;
+    $('cpSum').innerHTML='📤 '+cpLabel(cp.src)+' (알람 '+na+'개, 시간표 '+nt+'개)'+(cp.dst.length?' → 📥 '+cp.dst.slice().sort().map(cpLabel).join(', '):'');
+  }else $('cpSum').textContent='';
+}
+$('btnCopy').onclick=function(){var s=parseYmd(selDate||todayStr());cp={mode:document.querySelector('input[name=cpMode]:checked').value,month:new Date(s.getFullYear(),s.getMonth(),1),src:null,dst:[]};renderCopy();openM('mCopy');};
+document.querySelectorAll('input[name=cpMode]').forEach(function(r){r.onchange=function(){cp.mode=this.value;cp.src=null;cp.dst=[];renderCopy();}});
+$('cpA').onchange=$('cpT').onchange=renderCopy;
+$('cpPrev').onclick=function(){cp.month=new Date(cp.month.getFullYear(),cp.month.getMonth()-1,1);renderCopy();};
+$('cpNext').onclick=function(){cp.month=new Date(cp.month.getFullYear(),cp.month.getMonth()+1,1);renderCopy();};
+$('cpReset').onclick=function(){cp.src=null;cp.dst=[];renderCopy();};
+$('cpGrid').addEventListener('click',function(e){
+  var c=e.target.closest('.cd');if(!c)return;var k=cpKey(c.dataset.d);
+  if(!cp.src){cp.src=k;}
+  else if(k===cp.src){cp.src=null;cp.dst=[];}
+  else{var i=cp.dst.indexOf(k);if(i>=0)cp.dst.splice(i,1);else cp.dst.push(k);}
+  renderCopy();
+});
+$('cpOk').onclick=function(){
+  var doA=$('cpA').checked, doT=$('cpT').checked, over=document.querySelector('input[name=cpHow]:checked').value==='over';
+  var r=cpRange(cp.src), srcA=state.alarms.filter(function(a){return a.date>=r[0]&&a.date<=r[1]}), srcT=(state.tt||[]).filter(function(t){return t.date>=r[0]&&t.date<=r[1]});
+  if(!(doA&&srcA.length)&&!(doT&&srcT.length)){toast('복사할 일정이 없어요');return;}
+  var msg=cpLabel(cp.src)+' 일정을 '+cp.dst.slice().sort().map(cpLabel).join(', ')+'에 복사할까요?'+(over?'\n(붙일 곳에 있던 '+(doA&&doT?'알람·시간표':doA?'알람':'시간표')+'는 지워져요)':'');
+  if(!confirm(msg))return;
+  var nA=0,nT=0;
+  cp.dst.forEach(function(k){
+    var shift=daysBetween(cp.src,k), tr=cpRange(k);
+    if(doA){
+      if(over)state.alarms=state.alarms.filter(function(a){return !(a.date>=tr[0]&&a.date<=tr[1])});
+      srcA.forEach(function(a){var nd=addDaysS(a.date,shift);
+        if(state.alarms.some(function(b){return b.date===nd&&b.time===a.time&&b.name===a.name&&b.content===a.content}))return;
+        state.alarms.push({id:uid(),date:nd,time:a.time,name:a.name,content:a.content});nA++;});
+    }
+    if(doT){
+      if(over)state.tt=state.tt.filter(function(t){return !(t.date>=tr[0]&&t.date<=tr[1])});
+      srcT.forEach(function(t){if(addTT({date:addDaysS(t.date,shift),start:t.start,end:t.end,name:t.name}))nT++;});
+    }
+  });
+  save();closeM('mCopy');renderAll();toast('📅 복사했어요! 알람 '+nA+'개, 시간표 '+nT+'개');
+};
 
 /* ---------- 목록: 더블클릭 바로 수정 ---------- */
 var editing=false;
@@ -956,10 +1247,19 @@ function showVol(){$('sAVolV').textContent=Math.round(state.settings.alarmVolume
 $('btnSettings').onclick=function(){$('acctBox').style.display=CLOUD?'flex':'none';$('adminBox').style.display=(CLOUD&&cloud&&cloud.isAdmin)?'block':'none';$('admEmail').value='';
   var s=state.settings;$('sTitle').value=s.title;$('sDur').value=s.duration;$('sRep').value=s.repeats;$('sTpl').value=s.template;$('sHonor').value=s.honor;
   $('sAVol').value=s.alarmVolume;$('sVVol').value=s.voiceVolume;$('sRate').value=s.rate;$('sSound').value=s.sound;
+  $('sSplit').value=s.splitPct;$('sSplitR').textContent=100-s.splitPct;$('sTsOn').checked=!!s.ttStartOn;$('sTsSec').value=s.ttStartSec;$('sTeOn').checked=!!s.ttEndOn;$('sTeSec').value=s.ttEndSec;$('sTsTpl').value=s.ttStartTpl;$('sTeTpl').value=s.ttEndTpl;
   fillVoices();renderThemes();renderTplPreview();showVol();openM('mSettings');
 };
 function bindSet(id,key,fn,ev){$(id).addEventListener(ev||'input',function(){var v=fn(this.value);if(v===null)return;state.settings[key]=v;save();if(key==='title')applyTitle();if(key==='template'||key==='honor')renderTplPreview();});}
 bindSet('sTitle','title',function(v){return v.trim()||DEF.title});
+bindSet('sSplit','splitPct',function(v){var n=parseInt(v,10);return isNaN(n)?null:Math.max(20,Math.min(80,n))},'change');
+$('sSplit').addEventListener('change',function(){this.value=state.settings.splitPct;$('sSplitR').textContent=100-state.settings.splitPct;applySplit();});
+$('sTsOn').addEventListener('change',function(){state.settings.ttStartOn=this.checked;save();});
+$('sTeOn').addEventListener('change',function(){state.settings.ttEndOn=this.checked;save();});
+bindSet('sTsSec','ttStartSec',function(v){var n=parseInt(v,10);return isNaN(n)?0:Math.max(0,Math.min(3600,n))},'change');
+bindSet('sTeSec','ttEndSec',function(v){var n=parseInt(v,10);return isNaN(n)?0:Math.max(0,Math.min(3600,n))},'change');
+bindSet('sTsTpl','ttStartTpl',function(v){return v.trim()||DEF.ttStartTpl});
+bindSet('sTeTpl','ttEndTpl',function(v){return v.trim()||DEF.ttEndTpl});
 bindSet('sHonor','honor',function(v){return v.trim()});
 bindSet('sTpl','template',function(v){return v.trim()||DEF.template});
 bindSet('sDur','duration',function(v){var n=parseInt(v,10);return isNaN(n)?null:Math.max(1,Math.min(120,n))},'change');
@@ -1028,7 +1328,7 @@ function speakQueue(items,done){
   (function next(){
     if(!speaking||i>=items.length){speaking=false;done();return;}
     var it=items[i++];if(it.onStart)it.onStart();
-    var u=new SpeechSynthesisUtterance(lineFor(it.a));u.lang='ko-KR';var vc=voiceFor();if(vc)u.voice=vc;
+    var u=new SpeechSynthesisUtterance(it.a._line||lineFor(it.a));u.lang='ko-KR';var vc=voiceFor();if(vc)u.voice=vc;
     u.volume=s.voiceVolume;u.rate=s.rate;
     var guard=setTimeout(next,20000);
     u.onend=u.onerror=function(){clearTimeout(guard);setTimeout(next,450)};
@@ -1042,7 +1342,7 @@ function fire(list){
   if(alarmActive){queue.push(list);return;}
   alarmActive=true;
   var s=state.settings;
-  $('alWhen').textContent=(list[0].time||'')+' 귀가 시간이에요!';
+  $('alWhen').textContent=list[0]._when||((list[0].time||'')+' 귀가 시간이에요!');
   $('alKids').innerHTML=list.map(function(a,i){return '<div class="kid" data-i="'+i+'" style="animation-delay:'+(Math.min(i,12)*0.08)+'s"><div class="nm">'+esc(a.name)+'</div><div class="ct">'+esc(a.content)+'</div></div>'}).join('');
   $('alarm').classList.add('show');confetti();
   var origTitle=document.title, flip=0; var tt=setInterval(function(){document.title=(flip++%2)?'🔔 귀가 시간!':origTitle},800);
@@ -1070,24 +1370,45 @@ function closeAlarm(){
 $('btnAlarmClose').onclick=function(){speaking=false;try{speechSynthesis.cancel()}catch(e){};
   if(audioCtx){try{audioCtx.suspend().then(function(){audioCtx.resume()})}catch(e){}}
   closeAlarm();};
-function confetti(){var em=curTheme().fx;for(var i=0;i<24;i++){var c=document.createElement('div');c.className='confetti';c.textContent=em[i%em.length];c.style.left=Math.random()*100+'vw';c.style.animationDuration=(2.5+Math.random()*2.5)+'s';c.style.animationDelay=(Math.random()*1.2)+'s';document.body.appendChild(c);setTimeout(function(x){x.remove()}.bind(null,c),6000);}}
+function confetti(){return;var em=curTheme().fx;for(var i=0;i<24;i++){var c=document.createElement('div');c.className='confetti';c.textContent=em[i%em.length];c.style.left=Math.random()*100+'vw';c.style.animationDuration=(2.5+Math.random()*2.5)+'s';c.style.animationDelay=(Math.random()*1.2)+'s';document.body.appendChild(c);setTimeout(function(x){x.remove()}.bind(null,c),6000);}}
 
 var lastDay=todayStr();
 function check(){
   var n=new Date(), today=ymd(n), cur=n.getHours()*60+n.getMinutes();
   if(today!==lastDay){lastDay=today;state.fired={};save();selDate=null;renderAll();}
+  checkTT(n,today);
   // 정각~2분 사이에 아직 안 울린 알람 (백그라운드에서 타이머가 늦어져도 놓치지 않도록)
   var due=state.alarms.filter(function(a){if(a.date!==today||state.fired[a.id])return false;var m=toMin(a.time);return cur>=m&&cur-m<=2;});
   if(!due.length)return;
   due.forEach(function(a){state.fired[a.id]=1});
-  Object.keys(state.fired).forEach(function(id){if(!state.alarms.some(function(a){return a.id===id&&a.date===today}))delete state.fired[id]});
+  Object.keys(state.fired).forEach(function(id){if(/^t[se]:/.test(id))return;if(!state.alarms.some(function(a){return a.id===id&&a.date===today}))delete state.fired[id]});
   save();renderUpcoming();
   var g={};due.forEach(function(a){(g[a.time]=g[a.time]||[]).push(a)});
   Object.keys(g).sort().forEach(function(t){fire(g[t].sort(sortAl))});
   if(!started)toast('🔇 알람 시작 버튼을 눌러야 소리가 나요!');
 }
+function checkTT(n,today){
+  var s=state.settings, sec=n.getHours()*3600+n.getMinutes()*60+n.getSeconds(), ev=[];
+  (state.tt||[]).forEach(function(t){
+    if(t.date!==today)return;
+    [['s',s.ttStartOn,t.start,s.ttStartSec],['e',s.ttEndOn,t.end,s.ttEndSec]].forEach(function(x){
+      if(!x[1])return;var k='t'+x[0]+':'+t.id, at=toMin(x[2])*60-(+x[3]||0);
+      if(state.fired[k]||sec<at||sec-at>120)return;
+      state.fired[k]=1;
+      var tpl=(x[0]==='s'?s.ttStartTpl||DEF.ttStartTpl:s.ttEndTpl||DEF.ttEndTpl);
+      ev.push({at:at,name:t.name,content:(x[0]==='s'?'시작 · ':'끝 · ')+t.start+' ~ '+t.end,time:x[2],
+        _line:tpl.replace(/\{활동\}/g,t.name),
+        _when:x[0]==='s'?'📚 '+t.name+' 시간이에요!':'📚 '+t.name+' 시간이 '+(+x[3]?'곧 ':'')+'끝나요!'});
+    });
+  });
+  if(!ev.length)return;
+  save();ev.sort(function(a,b){return a.at-b.at});
+  if(ev.length>1)ev[0]=Object.assign({},ev[0],{_when:'📚 시간표 알림'});
+  fire(ev);
+  if(!started)toast('🔇 알람 시작 버튼을 눌러야 소리가 나요!');
+}
 var lastMin=-1;
-function tick(){renderClock();check();renderUpcoming();var m=new Date().getMinutes();if(m!==lastMin){lastMin=m;if(!editing)renderList();}}
+function tick(){renderClock();check();renderUpcoming();var m=new Date().getMinutes();if(m!==lastMin){lastMin=m;if(!editing){renderList();renderTT();}}}
 
 function startTimer(){
   try{
