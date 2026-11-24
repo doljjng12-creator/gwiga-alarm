@@ -254,7 +254,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--pink)}
       <span id="startArea"></span>
       <button class="pink" id="btnPaste">📋 붙여넣기 등록</button>
       <button id="btnTemplate">📥 엑셀 양식 받기</button>
-      <button id="btnSettings">⚙️ 설정</button>
+      <button id="btnSettings">⚙️ 설정<span id="reqBadge" style="display:none;margin-left:6px;background:#ff5a6e;color:#fff;border-radius:99px;padding:0 7px;font-size:13px"></span></button>
     </div>
   </header>
 
@@ -328,8 +328,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--pink)}
       </div>
       <div id="adminBox" style="display:none;background:var(--rowbg);border:2px dashed var(--line);border-radius:14px;padding:10px 12px;margin-bottom:12px">
         <h4 style="margin:0 0 6px">👥 사용자 관리 <small style="font-weight:normal;color:var(--sub)">(관리자에게만 보여요)</small></h4>
-        <div style="color:var(--sub);font-size:13px;margin-bottom:6px">여기에 등록한 구글 계정만 로그인해서 쓸 수 있어요. 사람마다 알람 목록과 설정은 따로 저장돼요.<br>👑 관리자는 다른 사람의 사용을 허락하거나 취소할 수 있어요. 관리자 지정은 기본 관리자만 할 수 있어요.</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap"><input id="admEmail" type="text" inputmode="email" autocomplete="off" placeholder="example@gmail.com" style="flex:1;min-width:180px"><button class="small" id="btnAdmAdd">➕ 사용 허락</button></div>
+        <div id="reqBox" style="display:none;margin-bottom:10px"></div>
+        <div style="color:var(--sub);font-size:13px;margin-bottom:6px">사용 신청이 오면 위에 보여요. 여기에 등록된 구글 계정만 로그인해서 쓸 수 있어요. 사람마다 알람 목록과 설정은 따로 저장돼요.<br>👑 관리자는 다른 사람의 사용을 허락하거나 취소할 수 있어요. 관리자 지정은 기본 관리자만 할 수 있어요.</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><input id="admEmail" type="text" inputmode="email" autocomplete="off" placeholder="직접 추가할 때만: example@gmail.com" style="flex:1;min-width:180px"><button class="small" id="btnAdmAdd">➕ 사용 허락</button></div>
         <div id="admList" style="margin-top:8px;display:flex;flex-direction:column;gap:4px"></div>
       </div>
       <h4>🏷️ 제목</h4>
@@ -400,6 +401,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--pink)}
     <h1 id="authTitle">우리반 귀가 알람</h1>
     <p id="authMsg">불러오는 중…</p>
     <button class="gbtn" id="btnLogin" hidden><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C36.9 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>구글 계정으로 로그인</button>
+    <button class="pink" id="btnApply" hidden>🙋 사용 신청하기</button>
     <div style="margin-top:10px"><button class="ghost" id="btnAuthOut" hidden>다른 계정으로 로그인</button></div>
   </div>
 </div>
@@ -495,7 +497,9 @@ function showAuth(mode,msg){
   a.classList.add('show');
   $('authMsg').textContent=msg||'';
   $('btnLogin').hidden=mode!=='login';
-  $('btnAuthOut').hidden=mode!=='denied'&&mode!=='error';
+  $('btnApply').hidden=mode!=='apply';
+  $('btnLogin').style.display=mode==='login'?'':'none';$('btnApply').style.display=mode==='apply'?'':'none';
+  $('btnAuthOut').hidden=['denied','error','apply','pending'].indexOf(mode)<0;
 }
 function markPastFired(){
   var tday=todayStr(), cur0=new Date().getHours()*60+new Date().getMinutes();
@@ -515,6 +519,7 @@ function startCloud(){
     function refreshAdmin(){
       cloud.isAdmin=isOwner()||acc.admins.indexOf(cloud.email)>=0;
       $('adminBox').style.display=cloud.isAdmin?'block':'none';
+      watchReqs(cloud.isAdmin);
       renderAdm();
     }
     function renderAdm(){
@@ -542,6 +547,43 @@ function startCloud(){
         box.appendChild(r);
       });
       if(!acc.emails.length){var n=document.createElement('div');n.style.cssText='color:var(--sub);font-size:13px';n.textContent='아직 허락한 계정이 없어요.';box.appendChild(n);}
+    }
+    var reqs=[];
+    function renderReqs(){
+      var box=$('reqBox');box.innerHTML='';
+      var b=$('reqBadge');b.textContent=reqs.length;b.style.display=(cloud.isAdmin&&reqs.length)?'inline-block':'none';
+      box.style.display=reqs.length?'block':'none';
+      if(!reqs.length)return;
+      var h=document.createElement('div');h.style.cssText='font-weight:bold;margin-bottom:4px';h.textContent='🙋 사용 신청 '+reqs.length+'건';box.appendChild(h);
+      reqs.forEach(function(q){
+        var r=document.createElement('div');r.className='reqRow';r.dataset.email=q.email;
+        r.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff6d6;color:#5a4500;border:2px solid #ffd970;border-radius:10px;padding:6px 10px;margin-bottom:4px';
+        var t=document.createElement('span');t.style.flex='1';t.textContent=(q.name?q.name+' · ':'')+q.email;r.appendChild(t);
+        var ok=document.createElement('button');ok.className='small pink reqOk';ok.textContent='✅ 승인';
+        ok.onclick=function(){
+          var em=String(q.email||'').toLowerCase();
+          var bt=F.writeBatch(db);
+          if(acc.emails.indexOf(em)<0&&em!==OWNER)bt.set(F.doc(db,'config','access'),{emails:acc.emails.concat([em]).sort(),admins:acc.admins});
+          bt.delete(F.doc(db,'requests',q.id));
+          bt.commit().then(function(){toast('✅ '+em+' 승인했어요');},function(e){console.error(e);toast('⚠️ 승인에 실패했어요.');});
+        };
+        var no=document.createElement('button');no.className='small ghost reqNo';no.textContent='거절';
+        no.onclick=function(){if(!confirm(q.email+' 신청을 거절할까요?'))return;
+          var bt=F.writeBatch(db);bt.delete(F.doc(db,'requests',q.id));bt.commit().catch(function(e){console.error(e);});};
+        r.appendChild(ok);r.appendChild(no);box.appendChild(r);
+      });
+    }
+    var reqUnsub=null;
+    function watchReqs(on){
+      if(on&&!reqUnsub){
+        reqUnsub=F.onSnapshot(F.collection(db,'requests'),function(qs){
+          var n=[];qs.forEach(function(d){var x=d.data()||{};n.push({id:d.id,email:String(x.email||''),name:String(x.name||''),at:+x.at||0})});
+          n.sort(function(a,b){return a.at-b.at});
+          if(n.length>reqs.length&&reqs._loaded)toast('🙋 새 사용 신청이 왔어요 (설정 → 사용자 관리)');
+          reqs=n;reqs._loaded=true;renderReqs();
+        },function(e){console.warn(e);});
+        unsubs.push(function(){if(reqUnsub){reqUnsub();reqUnsub=null;}reqs=[];renderReqs();});
+      }
     }
     function saveAccess(emails,admins){
       var b=F.writeBatch(db);b.set(F.doc(db,'config','access'),{emails:emails,admins:admins});
@@ -578,6 +620,9 @@ function startCloud(){
       unsubs.forEach(function(f){f()});unsubs=[];cloudReady=false;synced={};syncedSettings='';
       if(!user){cloud.isAdmin=false;$('adminBox').style.display='none';showAuth('login','선생님 구글 계정으로 로그인해 주세요.\n관리자가 허락한 계정만 사용할 수 있어요.');return;}
       cloud.email=(user.email||'').toLowerCase();uid=user.uid;$('acctEmail').textContent=cloud.email;
+      var gotA,gotS,settingsMissing,first;
+      startData();
+      function startData(){
       acc={emails:[],admins:[]};refreshAdmin();
       unsubs.push(F.onSnapshot(F.doc(db,'config','access'),function(snap){
         var d=snap.exists()?snap.data():null;
@@ -586,10 +631,27 @@ function startCloud(){
         refreshAdmin();
       },function(e){console.warn(e);}));
       showAuth('loading',cloud.email+'\n알람을 불러오는 중…');
-      var gotA=false,gotS=false,settingsMissing=false,first=true;
+      gotA=false;gotS=false;settingsMissing=false;first=true;
+      var gateOn=false, startUser=user;
+      function gate(){
+        if(gateOn)return;gateOn=true;
+        var had=false, rq=null;
+        $('btnApply').disabled=false;
+        $('btnApply').onclick=function(){
+          this.disabled=true;
+          var bt=F.writeBatch(db);
+          bt.set(F.doc(db,'requests',uid),{email:cloud.email,name:String(startUser.displayName||'').slice(0,50),at:Date.now()});
+          bt.commit().catch(function(e){console.error(e);$('btnApply').disabled=false;toast('⚠️ 신청에 실패했어요. 잠시 뒤 다시 눌러 주세요.');});
+        };
+        unsubs.push(rq=F.onSnapshot(F.doc(db,'requests',uid),function(snap){
+          if(snap.exists()){had=true;showAuth('pending',cloud.email+'\n사용 신청을 보냈어요! 🙌\n관리자 선생님이 승인하면 이 화면이 자동으로 열려요.');}
+          else if(had){gateOn=false;rq();unsubs.forEach(function(f){f()});unsubs=[];startData();}
+          else showAuth('apply',cloud.email+'\n이 계정은 아직 사용 허락을 받지 않았어요.\n아래 버튼을 누르면 관리자 선생님께 사용 신청이 가요.');
+        },function(e){console.error(e);showAuth('denied',cloud.email+'\n이 계정은 아직 사용 허락을 받지 않았어요.\n관리자 선생님께 위 이메일을 등록해 달라고 요청하세요.');}));
+      }
       function onErr(e){
         console.error(e);cloudReady=false;
-        if(e&&e.code==='permission-denied')showAuth('denied',cloud.email+'\n이 계정은 아직 사용 허락을 받지 않았어요.\n관리자 선생님께 위 이메일을 등록해 달라고 요청하세요.');
+        if(e&&e.code==='permission-denied')gate();
         else showAuth('error','알람을 불러오지 못했어요. ('+(e&&e.code||e)+')\n인터넷 연결을 확인해 주세요.');
       }
       function ready(){
@@ -618,6 +680,7 @@ function startCloud(){
         if(!first){if(editing)pendingRender=true;else renderAll();}
         ready();
       },onErr));
+      }
     });
   }).catch(function(e){console.error(e);showAuth('error','웹 저장소(Firebase)에 연결하지 못했어요.\n인터넷 연결과 FIREBASE_CONFIG 설정을 확인해 주세요.');});
 }

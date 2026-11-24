@@ -1,0 +1,45 @@
+rules_version = '2';
+// 귀가 알람 보안 규칙
+// - 기본 관리자: 아래 OWNER 이메일 (index.html의 ADMIN_EMAIL과 똑같이)
+// - 관리자: 기본 관리자가 지정한 사람. 사용 허락/취소 가능 (관리자 지정은 못 함)
+// - 사용자: 관리자가 허락한 사람. 자기 알람만 읽고 쓸 수 있음
+// - 처음 온 사람: 구글 로그인 후 사용 신청 → 관리자가 승인
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function OWNER() { return 'doljjng12@gmail.com'; }
+    function signedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function myEmail() { return request.auth.token.email.lower(); }
+    function isOwner() { return signedIn() && myEmail() == OWNER(); }
+    function accessPath() { return /databases/$(database)/documents/config/access; }
+    function hasAccess() { return exists(accessPath()); }
+    function acc() { return get(accessPath()).data; }
+    function isAdmin() { return isOwner() || (signedIn() && hasAccess() && myEmail() in acc().admins); }
+    function isUser() { return isAdmin() || (signedIn() && hasAccess() && myEmail() in acc().emails); }
+
+    // 사용자 명단: 허락된 사람은 읽기만, 관리자만 고치기 (관리자 지정은 기본 관리자만)
+    match /config/access {
+      allow read: if isUser();
+      allow create: if isOwner();
+      allow update: if isOwner() || (isAdmin() && request.resource.data.admins == resource.data.admins);
+      allow delete: if false;
+    }
+
+    // 사람마다 따로 저장되는 알람과 설정 (본인만)
+    match /users/{uid}/{document=**} {
+      allow read, write: if signedIn() && request.auth.uid == uid && isUser();
+    }
+
+    // 사용 신청: 로그인한 사람이 자기 이메일로만 신청, 관리자가 보고 승인/거절
+    match /requests/{uid} {
+      allow read: if (signedIn() && request.auth.uid == uid) || isAdmin();
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['email', 'name', 'at'])
+        && request.resource.data.email == myEmail()
+        && request.resource.data.name is string && request.resource.data.name.size() <= 50;
+      allow delete: if isAdmin() || (signedIn() && request.auth.uid == uid);
+    }
+
+    // 그 밖의 모든 곳은 막기
+    match /{document=**} { allow read, write: if false; }
+  }
+}
