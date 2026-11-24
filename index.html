@@ -498,7 +498,8 @@ input[type=date]{font-family:inherit;font-size:16px;color:var(--ink);border:2px 
 
     <div class="foot">
       <button id="btnTest" style="margin-right:auto">🔔 알람 미리 보기</button>
-      <button class="pink" data-close>닫기</button>
+      <button class="ghost" id="btnSetCancel">닫기</button>
+      <button class="pink" id="btnSetSave">💾 저장</button>
     </div>
   </div>
 </div>
@@ -598,8 +599,9 @@ function load(){
   if(s){state.alarms=(s.alarms||[]).map(normA);state.tt=(s.tt||[]).map(normT);var old=s.settings||{};
     Object.assign(state.settings,migrate(old));state.fired=s.fired||{};}
 }
+var setSnap=null; // 설정창이 열려 있는 동안 저장된 설정(바꾼 건 '저장' 전까지 임시)
 function save(){
-  if(!CLOUD){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast('저장에 실패했어요. 백업 저장을 해 주세요.');}return;}
+  if(!CLOUD){try{var o=state;if(setSnap!==null)o=Object.assign({},state,{settings:JSON.parse(setSnap)});localStorage.setItem(KEY,JSON.stringify(o));}catch(e){toast('저장에 실패했어요. 백업 저장을 해 주세요.');}return;}
   try{localStorage.setItem(KEY+'-fired',JSON.stringify(state.fired));}catch(e){}
   if(cloud&&cloudReady)cloudPush();
 }
@@ -610,7 +612,7 @@ function cloudPush(){
   Object.keys(synced).forEach(function(id){if(!cur[id])ops.push({t:'del',c:'alarms',id:id});});
   var curT={};(state.tt||[]).forEach(function(t){t=normT(t);var j=JSON.stringify(t);curT[t.id]=j;if(syncedT[t.id]!==j)ops.push({t:'set',c:'tt',id:t.id,d:t});});
   Object.keys(syncedT).forEach(function(id){if(!curT[id])ops.push({t:'del',c:'tt',id:id});});
-  var st=Object.assign({},state.settings), sj=JSON.stringify(st);
+  var st=setSnap!==null?JSON.parse(setSnap):Object.assign({},state.settings), sj=JSON.stringify(st);
   if(sj!==syncedSettings)ops.push({t:'set',c:'meta',id:'settings',d:st});
   if(!ops.length)return;
   synced=cur;syncedT=curT;syncedSettings=sj;
@@ -752,7 +754,7 @@ function startCloud(){
         showAuth('login','로그인에 실패했어요. ('+(e&&e.code||e)+')\n잠시 뒤 다시 눌러 주세요.');
       });
     };
-    $('btnAuthOut').onclick=$('btnLogout').onclick=function(){cloud.signOut();closeM('mSettings');};
+    $('btnAuthOut').onclick=$('btnLogout').onclick=function(){if(setSnap!==null){state.settings=JSON.parse(setSnap);setSnap=null;}cloud.signOut();closeM('mSettings');};
     A.onAuthStateChanged(auth,function(user){
       unsubs.forEach(function(f){f()});unsubs=[];cloudReady=false;synced={};syncedT={};syncedSettings='';state.tt=[];
       if(!user){cloud.isAdmin=false;$('adminBox').style.display='none';showAuth('login','선생님 구글 계정으로 로그인해 주세요.\n관리자가 허락한 계정만 사용할 수 있어요.');return;}
@@ -805,7 +807,7 @@ function startCloud(){
         purgeOld();
       }
       unsubs.push(F.onSnapshot(ref('meta','settings'),function(snap){
-        if(snap.exists()){state.settings=Object.assign({},DEF,migrate(snap.data()));syncedSettings=JSON.stringify(state.settings);settingsMissing=false;}
+        if(snap.exists()){var ns=Object.assign({},DEF,migrate(snap.data()));syncedSettings=JSON.stringify(ns);settingsMissing=false;if(setSnap!==null)setSnap=syncedSettings;else state.settings=ns;}
         else settingsMissing=true;
         gotS=true;applyTheme();applyTitle();
         if(!first){if(editing)pendingRender=true;else renderAll();}
@@ -1303,7 +1305,7 @@ $('btnSettings').onclick=function(){$('acctBox').style.display=CLOUD?'flex':'non
   var s=state.settings;$('sTitle').value=s.title;$('sDur').value=s.duration;$('sRep').value=s.repeats;$('sTpl').value=s.template;$('sHonor').value=s.honor;
   $('sAVol').value=s.alarmVolume;$('sVVol').value=s.voiceVolume;$('sRate').value=s.rate;$('sSound').value=s.sound;
   $('sKidSec').value=+s.kidSec||0;$('sSplit').value=s.splitPct;$('sSplitR').textContent=100-s.splitPct;$('sTsOn').checked=!!s.ttStartOn;$('sTsSec').value=s.ttStartSec;$('sTeOn').checked=!!s.ttEndOn;$('sTeSec').value=s.ttEndSec;$('sTsTpl').value=s.ttStartTpl;$('sTeTpl').value=s.ttEndTpl;
-  fillVoices();renderThemes();renderTplPreview();showVol();openM('mSettings');
+  fillVoices();renderThemes();renderTplPreview();showVol();setSnap=JSON.stringify(state.settings);openM('mSettings');
 };
 function bindSet(id,key,fn,ev){$(id).addEventListener(ev||'input',function(){var v=fn(this.value);if(v===null)return;state.settings[key]=v;save();if(key==='title')applyTitle();if(key==='template'||key==='honor')renderTplPreview();});}
 bindSet('sTitle','title',function(v){return v.trim()||DEF.title});
@@ -1332,7 +1334,16 @@ bindSet('sRate','rate',function(v){return +v});
 bindSet('sSound','sound',function(v){return v},'change');
 bindSet('sVoice','voiceURI',function(v){return v},'change');
 $('themeList').addEventListener('click',function(e){var t=e.target.closest('.th');if(!t)return;state.settings.theme=t.dataset.id;save();applyTheme();renderThemes();});
-$('btnTest').onclick=function(){ensureAudio();closeM('mSettings');var n=new Date();
+function settingsClose(keep){
+  if(setSnap===null){closeM('mSettings');return;}
+  if(!keep){state.settings=JSON.parse(setSnap);}
+  setSnap=null;closeM('mSettings');save();
+  applyTheme();applyTitle();applySplit();renderAll();
+  toast(keep?'설정을 저장했어요 💾':'바꾼 설정은 저장하지 않았어요');
+}
+$('btnSetSave').onclick=function(){settingsClose(true)};
+$('btnSetCancel').onclick=function(){settingsClose(false)};
+$('btnTest').onclick=function(){ensureAudio();var n=new Date();
   fire([{name:'박지영',content:'피아노 학원',time:pad(n.getHours())+':'+pad(n.getMinutes())},{name:'이진호',content:'엄마가 태우러옴',time:''}]);};
 
 
@@ -1478,7 +1489,7 @@ function startTimer(){
   setInterval(tick,1000);
 }
 document.addEventListener('visibilitychange',function(){if(!document.hidden)tick()});
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){if($('alarm').classList.contains('show'))$('btnAlarmClose').click();else document.querySelectorAll('.modal-bg.show').forEach(function(m){m.classList.remove('show')});}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){if($('alarm').classList.contains('show'))$('btnAlarmClose').click();else{if($('mSettings').classList.contains('show')){settingsClose(false);return;}document.querySelectorAll('.modal-bg.show').forEach(function(m){m.classList.remove('show')});}}});
 document.addEventListener('pointerdown',function once(){if(!started)startAlarms();},{once:true});
 if(window.speechSynthesis)speechSynthesis.onvoiceschanged=function(){if($('mSettings').classList.contains('show'))fillVoices();};
 
