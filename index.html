@@ -464,7 +464,7 @@ input[type=date]{font-family:inherit;font-size:16px;color:var(--ink);border:2px 
       <h4>📢 안내 문구</h4>
       <div class="set-grid">
         <label for="sHonor">이름 뒤 호칭</label><input type="text" id="sHonor" placeholder="예: 학생, 님, 친구 (비우면 이름만)" maxlength="10">
-        <label for="sTpl">기본 문구</label><input type="text" id="sTpl">
+        <label for="sTpl">기본 문구</label><div class="rng"><input type="text" id="sTpl" style="flex:1;min-width:0"><button class="small ghost tplReset" data-for="sTpl" title="처음 문구로 되돌리기">↺ 기본값</button></div>
         <span></span><span class="hint" style="margin:0">{이름} 자리에 "이름+호칭", {내용} 자리에 내용이 들어가요. </span>
         <span>예시</span><span id="tplPreview" style="font-family:'Jua',sans-serif;color:var(--pink-d)"></span>
       </div>
@@ -490,8 +490,8 @@ input[type=date]{font-family:inherit;font-size:16px;color:var(--ink);border:2px 
         <label for="sSplit">화면 나누기</label><div class="rng" style="flex-wrap:wrap">알람 목록 <input type="number" id="sSplit" min="20" max="80" step="5" style="width:80px;flex:none"> % · 시간표 <b id="sSplitR"></b>%</div>
         <label>시작 알람</label><div class="rng" style="flex-wrap:wrap"><label style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" id="sTsOn"> 켜기</label> · 시작 <input type="number" id="sTsSec" min="0" max="3600" style="width:90px;flex:none"> 초 전 <span style="font-size:13px;color:var(--sub)">(0이면 시작 시각에)</span></div>
         <label>종료 알람</label><div class="rng" style="flex-wrap:wrap"><label style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" id="sTeOn"> 켜기</label> · 끝 <input type="number" id="sTeSec" min="0" max="3600" style="width:90px;flex:none"> 초 전 <span style="font-size:13px;color:var(--sub)">(0이면 끝나는 시각에)</span></div>
-        <label for="sTsTpl">시작 안내 문구</label><input type="text" id="sTsTpl">
-        <label for="sTeTpl">종료 안내 문구</label><input type="text" id="sTeTpl">
+        <label for="sTsTpl">시작 안내 문구</label><div class="rng"><input type="text" id="sTsTpl" style="flex:1;min-width:0"><button class="small ghost tplReset" data-for="sTsTpl" title="처음 문구로 되돌리기">↺ 기본값</button></div>
+        <label for="sTeTpl">종료 안내 문구</label><div class="rng"><input type="text" id="sTeTpl" style="flex:1;min-width:0"><button class="small ghost tplReset" data-for="sTeTpl" title="처음 문구로 되돌리기">↺ 기본값</button></div>
       </div>
       <p class="hint" style="margin-top:6px">문구의 {활동}은 활동 이름으로 바뀌어요. 예) 독서 시간입니다</p>
     </div>
@@ -1318,6 +1318,8 @@ bindSet('sTsTpl','ttStartTpl',function(v){return v.trim()||DEF.ttStartTpl});
 bindSet('sTeTpl','ttEndTpl',function(v){return v.trim()||DEF.ttEndTpl});
 bindSet('sHonor','honor',function(v){return v.trim()});
 bindSet('sTpl','template',function(v){return v.trim()||DEF.template});
+[].forEach.call(document.querySelectorAll('.tplReset'),function(b){b.onclick=function(){var k={sTpl:'template',sTsTpl:'ttStartTpl',sTeTpl:'ttEndTpl'}[b.dataset.for];
+  state.settings[k]=DEF[k];$(b.dataset.for).value=DEF[k];save();if(k==='template')renderTplPreview();toast('기본 문구로 바꿨어요');};});
 bindSet('sDur','duration',function(v){var n=parseInt(v,10);return isNaN(n)?null:Math.max(1,Math.min(120,n))},'change');
 bindSet('sRep','repeats',function(v){var n=parseInt(v,10);return isNaN(n)?null:Math.max(0,Math.min(10,n))},'change');
 bindSet('sAVol','alarmVolume',function(v){return +v});
