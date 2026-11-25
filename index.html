@@ -261,7 +261,9 @@ input[type=date]{font-family:inherit;font-size:16px;color:var(--ink);border:2px 
 .calg .dw{text-align:center;font-size:13px;color:var(--sub)}
 .calg .cd{border:2px solid transparent;border-radius:10px;padding:4px 2px;text-align:center;cursor:pointer;min-height:48px;background:var(--rowbg);user-select:none}
 .calg .cd .num{font-family:'Jua',sans-serif;font-size:17px}
-.calg .cd .cnt{font-size:11px;color:var(--sub);line-height:1.2}
+.calg .cd .cnt{font-size:12px;color:var(--sub);line-height:1.25}
+#cpSum{display:none}
+.cpcnt{margin-top:8px;font-size:15px;background:var(--rowbg);border-radius:10px;padding:6px 10px;line-height:1.6}
 .calg .cd.other{opacity:.4}
 .calg .cd.wkend .num{color:#d66}
 .calg .cd.today{border-color:var(--mint)}
@@ -392,6 +394,7 @@ input[type=date]{font-family:inherit;font-size:16px;color:var(--ink);border:2px 
       <div class="calh"><button class="small ghost" id="cpPrev">◀</button><span id="cpMonth"></span><button class="small ghost" id="cpNext">▶</button></div>
       <div class="calg" id="cpGrid"></div>
     </div>
+    <div class="cpcnt" id="cpCnt"></div>
     <div class="cpopt">
       복사할 것: <label><input type="checkbox" id="cpA" checked> 알람</label><label><input type="checkbox" id="cpT"> 시간표</label><br>
       붙일 곳에 이미 있으면: <label><input type="radio" name="cpHow" value="add" checked> 그대로 두고 추가</label><label><input type="radio" name="cpHow" value="over"> 지우고 덮어쓰기</label>
@@ -1076,6 +1079,19 @@ function addDaysS(s,n){var d=parseYmd(s);d.setDate(d.getDate()+n);return ymd(d)}
 function mondayOf(s){var d=parseYmd(s);return addDaysS(s,-((d.getDay()+6)%7))}
 function daysBetween(a,b){return Math.round((parseYmd(b)-parseYmd(a))/86400000)}
 var cp={mode:'week',month:null,src:null,dst:[]};
+function cpAl(){return state.alarms.concat(cp.old?cp.old.a:[])}
+function cpTt(){return (state.tt||[]).concat(cp.old?cp.old.t:[])}
+function cpCount(r){return [cpAl().filter(function(a){return a.date>=r[0]&&a.date<=r[1]}).length,cpTt().filter(function(t){return t.date>=r[0]&&t.date<=r[1]}).length]}
+function cpLoadOld(a,b){ // 이번 주 월요일 전 기록은 평소에 안 읽으므로, 달력에 보일 때만 그 기간을 읽어 옴
+  var cut=cutoffDate();if(a>=cut||!CLOUD||!cloud||!cloud.range)return;
+  var e=b<cut?b:addDaysS(cut,-1), key=a+'_'+e;cp.old=cp.old||{a:[],t:[],done:{}};
+  if(cp.old.done[key])return;cp.old.done[key]=1;
+  Promise.all([cloud.range('alarms',a,e),cloud.range('tt',a,e)]).then(function(r){
+    var ia={},it={};cp.old.a.forEach(function(x){ia[x.id]=1});cp.old.t.forEach(function(x){it[x.id]=1});
+    r[0].forEach(function(x){if(!ia[x.id]&&x.date<cut)cp.old.a.push(normA(x))});r[1].forEach(function(x){if(!it[x.id]&&x.date<cut)cp.old.t.push(normT(x))});
+    if($('mCopy').classList.contains('show'))renderCopy();
+  }).catch(function(e){console.warn(e);delete cp.old.done[key];});
+}
 function cpKey(d){return cp.mode==='week'?mondayOf(d):d}
 function cpRange(k){return cp.mode==='week'?[k,addDaysS(k,6)]:[k,k]}
 function cpLabel(k){var r=cpRange(k);return cp.mode==='week'?mmdd(r[0])+'~'+mmdd(addDaysS(k,4))+' 주':mmdd(k)+'('+DAYS[parseYmd(k).getDay()]+')'}
@@ -1083,11 +1099,12 @@ function renderCopy(){
   var m=cp.month, y=m.getFullYear(), mo=m.getMonth();
   $('cpMonth').textContent=y+'년 '+(mo+1)+'월';
   var first=new Date(y,mo,1), start=addDaysS(ymd(first),-((first.getDay()+6)%7)), today=todayStr(), h='';
+  cpLoadOld(start,addDaysS(start,41));
   ['월','화','수','목','금','토','일'].forEach(function(w){h+='<div class="dw">'+w+'</div>'});
   for(var i=0;i<42;i++){
     var d=addDaysS(start,i), dd=parseYmd(d), k=cpKey(d);
     if(i===35&&dd.getMonth()!==mo)break;
-    var na=state.alarms.filter(function(a){return a.date===d}).length, nt=(state.tt||[]).filter(function(t){return t.date===d}).length;
+    var cc=cpCount([d,d]), na=cc[0], nt=cc[1];
     var cls='cd'+(dd.getMonth()!==mo?' other':'')+(dd.getDay()%6===0?' wkend':'')+(d===today?' today':'')+(cp.src===k?' src':'')+(cp.dst.indexOf(k)>=0?' dst':'');
     h+='<div class="'+cls+'" data-d="'+d+'"><div class="num">'+dd.getDate()+'</div><div class="cnt">'+(na?'🔔'+na:'')+(nt?' 📚'+nt:'')+'</div></div>';
   }
@@ -1098,11 +1115,15 @@ function renderCopy(){
   var ok=cp.src&&cp.dst.length&&($('cpA').checked||$('cpT').checked);
   $('cpOk').disabled=!ok;
   if(cp.src){
-    var r=cpRange(cp.src), na=$('cpA').checked?state.alarms.filter(function(a){return a.date>=r[0]&&a.date<=r[1]}).length:0, nt=$('cpT').checked?(state.tt||[]).filter(function(t){return t.date>=r[0]&&t.date<=r[1]}).length:0;
+    var r=cpRange(cp.src), sc=cpCount(r), na=$('cpA').checked?sc[0]:0, nt=$('cpT').checked?sc[1]:0;
     $('cpSum').innerHTML='📤 '+cpLabel(cp.src)+' (알람 '+na+'개, 시간표 '+nt+'개)'+(cp.dst.length?' → 📥 '+cp.dst.slice().sort().map(cpLabel).join(', '):'');
   }else $('cpSum').textContent='';
+  var mc=cpCount([ymd(first),ymd(new Date(y,mo+1,0))]), lines=['🗓️ '+(mo+1)+'월 전체: 🔔 알람 <b>'+mc[0]+'</b>건 · 📚 시간표 <b>'+mc[1]+'</b>건'];
+  if(cp.src){var s1=cpCount(cpRange(cp.src));lines.push('📤 복사할 '+cpLabel(cp.src)+': 🔔 <b>'+s1[0]+'</b>건 · 📚 <b>'+s1[1]+'</b>건');}
+  cp.dst.slice().sort().forEach(function(k){var c1=cpCount(cpRange(k));lines.push('📥 붙일 '+cpLabel(k)+': 지금 🔔 <b>'+c1[0]+'</b>건 · 📚 <b>'+c1[1]+'</b>건');});
+  $('cpCnt').innerHTML=lines.join('<br>');
 }
-$('btnCopy').onclick=function(){var s=parseYmd(selDate||todayStr());cp={mode:document.querySelector('input[name=cpMode]:checked').value,month:new Date(s.getFullYear(),s.getMonth(),1),src:null,dst:[]};renderCopy();openM('mCopy');};
+$('btnCopy').onclick=function(){var s=parseYmd(selDate||todayStr());cp={old:null,mode:document.querySelector('input[name=cpMode]:checked').value,month:new Date(s.getFullYear(),s.getMonth(),1),src:null,dst:[]};renderCopy();openM('mCopy');};
 document.querySelectorAll('input[name=cpMode]').forEach(function(r){r.onchange=function(){cp.mode=this.value;cp.src=null;cp.dst=[];renderCopy();}});
 $('cpA').onchange=$('cpT').onchange=renderCopy;
 $('cpPrev').onclick=function(){cp.month=new Date(cp.month.getFullYear(),cp.month.getMonth()-1,1);renderCopy();};
@@ -1117,7 +1138,7 @@ $('cpGrid').addEventListener('click',function(e){
 });
 $('cpOk').onclick=function(){
   var doA=$('cpA').checked, doT=$('cpT').checked, over=document.querySelector('input[name=cpHow]:checked').value==='over';
-  var r=cpRange(cp.src), srcA=state.alarms.filter(function(a){return a.date>=r[0]&&a.date<=r[1]}), srcT=(state.tt||[]).filter(function(t){return t.date>=r[0]&&t.date<=r[1]});
+  var r=cpRange(cp.src), srcA=cpAl().filter(function(a){return a.date>=r[0]&&a.date<=r[1]}), srcT=cpTt().filter(function(t){return t.date>=r[0]&&t.date<=r[1]});
   if(!(doA&&srcA.length)&&!(doT&&srcT.length)){toast('복사할 일정이 없어요');return;}
   var msg=cpLabel(cp.src)+' 일정을 '+cp.dst.slice().sort().map(cpLabel).join(', ')+'에 복사할까요?'+(over?'\n(붙일 곳에 있던 '+(doA&&doT?'알람·시간표':doA?'알람':'시간표')+'는 지워져요)':'');
   if(!confirm(msg))return;
